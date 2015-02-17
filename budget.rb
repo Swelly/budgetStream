@@ -17,7 +17,11 @@ end
 class Fund
   include DataMapper::Resource
   property :id, Serial
-  property :b_id
+  property :b_id, Integer, :required => true
+  property :amount, Integer, :required => true
+  property :description, Text, :required => true
+  property :created_at, DateTime
+  property :updated_at, DateTime
 end
 
 DataMapper.finalize.auto_upgrade!
@@ -35,7 +39,7 @@ end
 
 # See individual budget
 get '/budget/:id' do
-  b = Budget.get :id # Todo -- Check for existence
+  b = Budget.get params[:id] # Todo -- Check for existence
   b.to_json
 end
 
@@ -53,7 +57,7 @@ end
 
 # Edit a budget (request and overwrite)
 put '/budget/:id' do
-  b = Budget.get :id # Todo -- Add a check if it exists
+  b = Budget.get params[:id] # Todo -- Add a check if it exists
   b.title = params[:title]
   b.length = params[:length]
   b.initial = params[:initial]
@@ -65,13 +69,29 @@ end
 
 # Deleting a budget
 delete '/budget/:id' do
-  b = Budget.get :id # TODO -- Add a check ?exists
+  b = Budget.get params[:id] # TODO -- Add a check ?exists
   b.destroy
   # Display status after destruction
   status 200, "Budget #{id} deleted"
 end
 
+# View funds for a budget
+get '/budget/:id/fund' do
+  funds = Fund.all :b_id => params[:id]
+  funds.to_json
+end
 
+# Add a fund to budget
+post '/budget/:id/fund' do
+  f = Fund.new
+  f.b_id = params[:id]
+  f.amount = params[:amount]
+  f.description = params[:description]
+  f.created_at = Time.now
+  f.updated_at = Time.now
+  f.save
+  f.to_json
+end
 
 if Budget.count == 0
   Budget.create(:title => "Test Budget", :length => 7, :initial => 10000, :created_at => Time.now, :updated_at => Time.now)
