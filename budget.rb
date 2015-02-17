@@ -1,6 +1,13 @@
-require 'sinatra'
-require 'data_mapper'
+## Using Sinatra DSL and Ruby 2.2.0 ##
+
+## Gems ##
+require "sinatra"
+require "data_mapper"
+require "json"
 require "sinatra/reloader" if development?
+
+
+## Setting up a default SQLite3 DB for dev ##
 
 DataMapper::setup(:default, "sqlite3://#{Dir.pwd}/budget.db")
 
@@ -26,24 +33,30 @@ end
 
 DataMapper.finalize.auto_upgrade!
 
+
+## Beginning API ##
+
 # HomePage
 get '/' do
-  'home'
+  'Homepage SON!'
 end
+
+## Budget
 
 #  See All and Create Budgets
+# First Rest call
 get '/budget' do
-  @bud = Budget.all order: :id.desc
-  @bud.to_json
+  bud = Budget.all order: :id.desc
+  bud.to_json
 end
 
-# See individual budget
+# See an individual budget
 get '/budget/:id' do
   b = Budget.get params[:id] # Todo -- Check for existence
   b.to_json
 end
 
-# Make a new budget in DB
+# Make a new Budget in DB with POST request to change data on the server
 post '/budget' do
   b = Budget.new
   b.title = params[:title]
@@ -55,7 +68,7 @@ post '/budget' do
   b.to_json
 end
 
-# Edit a budget (request and overwrite)
+# Edit a budget (request and overwrite) with PUT to overwrite data
 put '/budget/:id' do
   b = Budget.get params[:id] # Todo -- Add a check if it exists
   b.title = params[:title]
@@ -67,30 +80,43 @@ put '/budget/:id' do
   b.to_json
 end
 
-# Deleting a budget
+# Deleting a budget using DELETE (Destroy)
 delete '/budget/:id' do
-  b = Budget.get params[:id] # TODO -- Add a check ?exists
+  b = Budget.get params[:id] # TODO -- Add a check if it exists
   b.destroy
   # Display status after destruction
-  status 200, "Budget #{id} deleted"
+  status 200, "Budget #{:id} deleted"
 end
 
-# View funds for a budget
+## Funds
+
+# View funds for a budget (find all funds associated with budget id)
 get '/budget/:id/fund' do
   funds = Fund.all :b_id => params[:id]
   funds.to_json
 end
 
-# Add a fund to budget
+# Add a fund to budget with specific ID
 post '/budget/:id/fund' do
   f = Fund.new
   f.b_id = params[:id]
   f.amount = params[:amount]
-  f.description = params[:description]
+  # Description NOT required
+  if params[:description]
+    f.description = params[:description]
+  end
   f.created_at = Time.now
   f.updated_at = Time.now
   f.save
   f.to_json
+end
+
+# Deleting a Fund
+delete '/budget/:id/fund/:f_id' do
+  f = Fund.get params[:id] ##
+  f.destroy
+  # Display status after destruction
+  status 200, "Fund #{f_id} deleted for budget #{params[:id]}"
 end
 
 if Budget.count == 0
